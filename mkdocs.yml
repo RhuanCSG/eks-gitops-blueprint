@@ -1,0 +1,102 @@
+site_name: EKS GitOps Blueprint
+site_description: Laboratório de infraestrutura GitOps com AWS EKS, HashiCorp Vault, Harbor e ArgoCD — padrões de produção aplicados desde o primeiro dia.
+site_author: RhuanCSG
+site_url: https://RhuanCSG.github.io/eks-gitops-blueprint/
+repo_name: eks-gitops-blueprint
+repo_url: https://github.com/RhuanCSG/eks-gitops-blueprint
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Alternar para modo escuro
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Alternar para modo claro
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+    - toc.integrate
+
+plugins:
+  - search:
+      lang:
+        - pt
+        - en
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - def_list
+  - footnotes
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/RhuanCSG
+  analytics:
+    feedback:
+      title: Esta página foi útil?
+      ratings:
+        - icon: material/thumb-up-outline
+          name: Sim
+          data: 1
+          note: Obrigado pelo feedback!
+        - icon: material/thumb-down-outline
+          name: Não
+          data: 0
+          note: Obrigado pelo feedback!
+
+nav:
+  - Home: index.md
+  - Guia Passo a Passo:
+    - 01. Pré-requisitos: 01-prerequisites.md
+    - 02. VPC e Networking: 02-vpc-networking.md
+    - 03. Cluster EKS: 03-eks-cluster.md
+    - 04. ArgoCD: 04-argocd.md
+    - 05. HashiCorp Vault: 05-vault.md
+    - 06. Harbor Registry: 06-harbor.md
+    - 07. External Secrets Operator: 07-external-secrets.md
+    - 08. cert-manager: 08-cert-manager.md
+    - 09. AWS Load Balancer Controller: 09-aws-load-balancer.md
