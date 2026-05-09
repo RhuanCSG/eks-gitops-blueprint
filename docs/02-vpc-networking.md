@@ -387,7 +387,7 @@ VPC: 10.0.0.0/16
       --versioning-configuration Status=Enabled
 
     aws s3api put-bucket-encryption --bucket $HARBOR_S3_BUCKET `
-      --server-side-encryption-configuration '{\"Rules\":[{\"ApplyServerSideEncryptionByDefault\":{\"SSEAlgorithm\":\"AES256\"}}]}'
+      --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 
     Write-Host "Harbor S3 bucket: $HARBOR_S3_BUCKET"
     ```
