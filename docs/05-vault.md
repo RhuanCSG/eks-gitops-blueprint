@@ -299,8 +299,8 @@ helm repo update
 
 ```bash
 kubectl exec -n vault vault-0 -- vault operator init \
-  -key-shares=1 \
-  -key-threshold=1 \
+  -recovery-shares=1 \
+  -recovery-threshold=1 \
   -format=json > vault-init.json
 ```
 
