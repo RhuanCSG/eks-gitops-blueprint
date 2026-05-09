@@ -114,6 +114,12 @@ argocd-server-xxx                                  1/1     Running   0
 
 ## Configurar Repositório Privado
 
+!!! info "Scope do GitHub PAT"
+    O token precisa de permissão de leitura no repositório privado:
+
+    - **Classic PAT**: scope `repo`
+    - **Fine-grained PAT**: repositório `infra-gitops-delivery` → `Contents: Read-only`
+
 === "Linux / macOS"
 
     ```bash
