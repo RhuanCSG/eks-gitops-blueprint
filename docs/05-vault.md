@@ -297,24 +297,27 @@ helm repo update
 
 ## Inicialização do Vault
 
-```bash
-kubectl exec -n vault vault-0 -- vault operator init \
-  -recovery-shares=1 \
-  -recovery-threshold=1 \
-  -format=json > vault-init.json
-```
-
 === "Linux / macOS"
 
     ```bash
-    VAULT_ROOT_TOKEN=$(cat vault-init.json | jq -r '.root_token')
+    kubectl exec -n vault vault-0 -- vault operator init \
+      -recovery-shares=1 \
+      -recovery-threshold=1 \
+      -format=json > ~/vault-init.json
+
+    VAULT_ROOT_TOKEN=$(cat ~/vault-init.json | jq -r '.root_token')
     echo "VAULT_ROOT_TOKEN=$VAULT_ROOT_TOKEN"
     ```
 
 === "Windows (PowerShell)"
 
     ```powershell
-    $VAULT_ROOT_TOKEN = (Get-Content vault-init.json | ConvertFrom-Json).root_token
+    kubectl exec -n vault vault-0 -- vault operator init `
+      -recovery-shares=1 `
+      -recovery-threshold=1 `
+      -format=json | Set-Content ~\vault-init.json
+
+    $VAULT_ROOT_TOKEN = (Get-Content ~\vault-init.json | ConvertFrom-Json).root_token
     Write-Host "VAULT_ROOT_TOKEN=$VAULT_ROOT_TOKEN"
     ```
 
@@ -339,14 +342,11 @@ HA Mode        active
 ## Configuração do Vault
 
 ```bash
-kubectl exec -n vault vault-0 -- vault login $VAULT_ROOT_TOKEN
+kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault secrets enable -path=secret kv-v2"
 
-kubectl exec -n vault vault-0 -- vault secrets enable -path=secret kv-v2
+kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault auth enable kubernetes"
 
-kubectl exec -n vault vault-0 -- vault auth enable kubernetes
-
-kubectl exec -n vault vault-0 -- vault write auth/kubernetes/config \
-  kubernetes_host="https://kubernetes.default.svc"
+kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc"
 ```
 
 ### Política para o ESO
@@ -373,19 +373,13 @@ kubectl exec -n vault vault-0 -- vault write auth/kubernetes/config \
 ### Role Kubernetes para o ESO
 
 ```bash
-kubectl exec -n vault vault-0 -- vault write auth/kubernetes/role/external-secrets \
-  bound_service_account_names=external-secrets \
-  bound_service_account_namespaces=external-secrets \
-  policies=external-secrets \
-  ttl=1h
+kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault write auth/kubernetes/role/external-secrets bound_service_account_names=external-secrets bound_service_account_namespaces=external-secrets policies=external-secrets ttl=1h"
 ```
 
-### Criar segredo de exemplo
+### Armazenar senha do Harbor
 
 ```bash
-kubectl exec -n vault vault-0 -- vault kv put secret/app/example \
-  database-password="minha-senha-secreta" \
-  api-key="minha-api-key"
+kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault kv put secret/harbor/admin HARBOR_ADMIN_PASSWORD=<HARBOR_ADMIN_PASSWORD>"
 ```
 
 ## Salvar variável do role ARN
