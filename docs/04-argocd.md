@@ -165,6 +165,13 @@ argocd-server-xxx                                  1/1     Running   0
 
 ## App of Apps — Bootstrap
 
+!!! warning "Pré-requisito: IAM antes do root-app"
+    No fluxo GitOps, o ArgoCD sobe Vault (Wave 3) e Harbor (Wave 4) automaticamente. Os pods precisam das Pod Identity Associations para acessar KMS e S3 **desde o primeiro start**. Crie todos os recursos IAM antes de aplicar o root-app:
+
+    - **Vault**: role IAM + Pod Identity Association → detalhes na [Etapa 05](05-vault.md)
+    - **Harbor**: Service Accounts + role IAM + Pod Identity Associations → detalhes na [Etapa 06](06-harbor.md)
+    - **AWS LBC**: role IAM + Pod Identity Association → detalhes na [Etapa 09](09-aws-load-balancer.md)
+
 ### Criar a Application raiz
 
 === "Linux / macOS"
