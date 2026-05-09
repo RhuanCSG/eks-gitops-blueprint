@@ -367,15 +367,7 @@ kubectl exec -n vault vault-0 -- vault write auth/kubernetes/config \
 === "Windows (PowerShell)"
 
     ```powershell
-    $policy = @'
-    path "secret/data/*" {
-      capabilities = ["read", "list"]
-    }
-    path "secret/metadata/*" {
-      capabilities = ["read", "list"]
-    }
-    '@
-    $policy | kubectl exec -i -n vault vault-0 -- vault policy write external-secrets -
+    'path "secret/data/*" { capabilities = ["read", "list"] } path "secret/metadata/*" { capabilities = ["read", "list"] }' | kubectl exec -i -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault policy write external-secrets -"
     ```
 
 ### Role Kubernetes para o ESO
