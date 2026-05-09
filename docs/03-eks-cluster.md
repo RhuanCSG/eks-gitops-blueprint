@@ -176,6 +176,9 @@ Certifique-se de que as variáveis do ambiente estão carregadas:
     "@ | Set-Content eks-cluster.yaml
     ```
 
+!!! tip "Windows"
+    Salve o conteúdo acima em `~\eks-cluster.yaml` e referencie pelo caminho ao executar o `eksctl`.
+
 ### 2. Criar o cluster
 
 ```bash
