@@ -2,6 +2,15 @@
 
 Instalamos o Harbor como registry privado de imagens com backend S3 para persistência.
 
+## Pré-requisito: Service Accounts
+
+O Helm chart do Harbor usa os Service Accounts `harbor-core` e `harbor-registry` quando os nomes são customizados no values.yaml. Esses SAs precisam existir **antes** da instalação — caso contrário o harbor-core e o harbor-registry não sobem.
+
+```bash
+kubectl create serviceaccount harbor-core -n harbor
+kubectl create serviceaccount harbor-registry -n harbor
+```
+
 ## IAM via EKS Pod Identity
 
 === "Linux / macOS"
@@ -172,7 +181,9 @@ helm repo update
       enabled: true
       storageClass: gp3
 
-    harborAdminPassword: "${HARBOR_ADMIN_PASSWORD}"
+    # Senha gerenciada via Vault + ESO
+    existingSecretAdminPassword: harbor-admin-secret
+    existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
     metrics:
       enabled: false
     EOF
@@ -181,11 +192,6 @@ helm repo update
 === "Windows (PowerShell)"
 
     ```powershell
-    $HARBOR_ADMIN_PASSWORD = [System.Convert]::ToBase64String(
-      [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(18)
-    )
-    Write-Host "HARBOR_ADMIN_PASSWORD=$HARBOR_ADMIN_PASSWORD"
-
     @"
     expose:
       type: clusterIP
@@ -219,7 +225,9 @@ helm repo update
       enabled: true
       storageClass: gp3
 
-    harborAdminPassword: "$HARBOR_ADMIN_PASSWORD"
+    # Senha gerenciada via Vault + ESO
+    existingSecretAdminPassword: harbor-admin-secret
+    existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
     metrics:
       enabled: false
     "@ | Set-Content harbor-values.yaml
@@ -343,6 +351,7 @@ helm repo update
 
 ## Checklist
 
+- [ ] Service Accounts `harbor-core` e `harbor-registry` pré-criados no namespace `harbor`
 - [ ] Role IAM do Harbor criada com acesso ao S3
 - [ ] Pod Identity Associations criadas para `harbor-core` e `harbor-registry`
 - [ ] Harbor instalado com backend S3
