@@ -1,3 +1,6 @@
 site/
 __pycache__/
 .DS_Store
+vault-init.json
+*.env
+eks-cluster.yaml

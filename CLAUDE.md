@@ -284,5 +284,17 @@ Após criar todos os recursos AWS (Etapas 01-09 da documentação):
 | 1 | Concluída | CLAUDE.md + 9 páginas de documentação (`eks-gitops-blueprint`) |
 | 2 | Concluída | Manifestos YAML locais (apps, charts, manifests, scripts) |
 | 3 | Concluída | 3 repos criados no GitHub + GitHub Pages habilitado |
-| 4 | Próxima | Executar o laboratório AWS (VPC → EKS → ArgoCD → Vault → Harbor) |
+| 4 | Em andamento | Executar o laboratório AWS — Etapas 01-05 concluídas, pendente: ESO (07), AWS LBC (09) |
 | 5 | Pendente | Repositório de aplicação + deploy end-to-end no cluster |
+
+## Recursos AWS Criados (Fase 4)
+
+| Recurso | ID / ARN |
+|---|---|
+| VPC | `vpc-0fb73b7357e7d4d53` |
+| Cluster EKS | `eks-gitops-lab` — us-east-1 — v1.32 |
+| KMS Key (Vault) | `arn:aws:kms:us-east-1:237474125667:key/24126b44-4889-4baa-89e8-bdca0f2e95dc` |
+| S3 Harbor | `harbor-registry-237474125667` |
+| IAM Role Vault | `eks-gitops-lab-vault` |
+| IAM Role Harbor | `eks-gitops-lab-harbor` |
+| IAM Role EBS CSI | `eks-gitops-lab-ebs-csi` |
