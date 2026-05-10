@@ -44,57 +44,79 @@ Ao final do guia, você terá um cluster completo operacional e um modelo reutil
 
 ## O que você vai construir
 
-```
-  AWS us-east-1
-  ┌───────────────────────────────────────────────────────────────────┐
-  │  VPC  10.0.0.0/16                                                 │
-  │                                                                   │
-  │   Subnets Públicas          ┌─────────────────────────────────┐   │
-  │   10.0.1.0/24  us-east-1a  │         ALB (internet-facing)    │   │
-  │   10.0.2.0/24  us-east-1b  │   ArgoCD · Vault · Harbor        │   │
-  │   10.0.3.0/24  us-east-1c  └────────────────┬────────────────┘   │
-  │                                             │ HTTPS               │
-  │   Subnets Privadas                          ▼                     │
-  │   10.0.11.0/24 us-east-1a  ┌─────────────────────────────────┐   │
-  │   10.0.12.0/24 us-east-1b  │  EKS Managed Nodes (Spot)       │   │
-  │   10.0.13.0/24 us-east-1c  │  t3.medium · Amazon Linux 2023  │   │
-  │                             │                                  │   │
-  │                             │  ┌─────────┐  ┌─────────────┐   │   │
-  │                             │  │ ArgoCD  │  │    Vault    │   │   │
-  │                             │  │App of   │  │  HA + Raft  │   │   │
-  │                             │  │  Apps   │  │  KMS unseal │   │   │
-  │                             │  └─────────┘  └─────────────┘   │   │
-  │                             │  ┌─────────┐  ┌─────────────┐   │   │
-  │                             │  │ Harbor  │  │     ESO     │   │   │
-  │                             │  │  + S3   │  │  + Vault    │   │   │
-  │                             │  └─────────┘  └─────────────┘   │   │
-  │                             │  ┌─────────┐  ┌─────────────┐   │   │
-  │                             │  │AWS LBC  │  │cert-manager │   │   │
-  │                             │  │  + ALB  │  │Let's Encrypt│   │   │
-  │                             │  └─────────┘  └─────────────┘   │   │
-  │                             └─────────────────────────────────┘   │
-  │                                                                   │
-  │   KMS (Vault unseal) · S3 (Harbor images) · IAM (Pod Identity)   │
-  └───────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    Dev([Developer])
+    Internet((Internet))
+
+    subgraph AWS["AWS us-east-1"]
+        GH[(GitHub\ninfra-gitops-delivery)]
+        KMS[(KMS\nVault unseal)]
+        S3[(S3\nHarbor images)]
+
+        subgraph VPC["VPC  10.0.0.0/16"]
+            ALB["AWS ALB\ninternet-facing\n10.0.1-3.0/24"]
+
+            subgraph EKS["EKS Managed Nodes — t3.medium Spot  —  10.0.11-13.0/24"]
+                ArgoCD[ArgoCD]
+                Vault[Vault HA+Raft]
+                Harbor[Harbor]
+                ESO[External Secrets]
+                LBC[AWS LBC]
+                CM[cert-manager]
+            end
+        end
+    end
+
+    Dev -->|git push| GH
+    Internet --> ALB
+    GH -->|sync 30s| ArgoCD
+    ALB --> ArgoCD
+    ALB --> Vault
+    ALB --> Harbor
+    LBC -.->|provisiona| ALB
+    ESO --> Vault
+    Vault --> KMS
+    Harbor --> S3
 ```
 
-**Fluxo GitOps:**
+**Fluxo GitOps com sync waves:**
 
-```
-  git push ──► GitHub Repo ──► ArgoCD detecta mudança
-                                      │
-                         reconcilia cluster automaticamente
-                                      │
-              ┌───────────────────────┼───────────────────────┐
-         [wave 0]                [wave 1-2]               [wave 3-4]
-         Namespaces               cert-manager              Vault HA
-         StorageClass             AWS LBC                   Harbor
-         NetworkPolicies          Ext. Secrets              + S3
+```mermaid
+sequenceDiagram
+    actor Dev as Developer
+    participant GH as GitHub
+    participant CD as ArgoCD
+    participant EKS as EKS Cluster
+
+    Dev->>GH: git push
+    GH-->>CD: webhook / poll 30s
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 0 — Namespaces · NetworkPolicies · StorageClass gp3
+        CD->>EKS: cluster-manifests
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 1 — cert-manager · AWS Load Balancer Controller
+        CD->>EKS: cert-manager, aws-lbc
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 2 — External Secrets Operator
+        CD->>EKS: external-secrets
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 3 — Vault HA + Raft + KMS auto-unseal
+        CD->>EKS: vault
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 4 — Harbor + S3 backend
+        CD->>EKS: harbor
+    end
+    EKS-->>Dev: cluster operacional
 ```
 
 ---
 
-## Guia em 9 Etapas
+## Guia em 10 Etapas
 
 | # | Etapa | O que você faz |
 |:---:|---|---|
@@ -106,7 +128,8 @@ Ao final do guia, você terá um cluster completo operacional e um modelo reutil
 | **06** | [Harbor Registry](https://RhuanCSG.github.io/eks-gitops-blueprint/06-harbor/) | Registry privado com backend S3 e robot accounts |
 | **07** | [External Secrets](https://RhuanCSG.github.io/eks-gitops-blueprint/07-external-secrets/) | Sincronizar segredos do Vault para Kubernetes Secrets |
 | **08** | [cert-manager](https://RhuanCSG.github.io/eks-gitops-blueprint/08-cert-manager/) | Certificados TLS automáticos com Let's Encrypt |
-| **09** | [AWS Load Balancer](https://RhuanCSG.github.io/eks-gitops-blueprint/09-aws-load-balancer/) | ALBs automáticos e exposição das ferramentas via HTTPS |
+| **09** | [AWS Load Balancer](https://RhuanCSG.github.io/eks-gitops-blueprint/09-aws-load-balancer/) | ALBs automáticos e exposição das ferramentas via HTTP |
+| **10** | [Destruição dos Recursos](https://RhuanCSG.github.io/eks-gitops-blueprint/10-cleanup/) | Remover todos os recursos AWS para evitar cobranças |
 
 > [!TIP]
 > Todos os comandos têm versões para **Linux/macOS** e **Windows (PowerShell)** — sem necessidade de WSL.
