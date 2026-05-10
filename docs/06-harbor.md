@@ -131,6 +131,17 @@ kubectl create serviceaccount harbor-registry -n harbor
     }
     ```
 
+!!! warning "Dependência crítica: harbor-admin-secret deve existir antes do harbor-core"
+    O Harbor usa `existingSecretAdminPassword: harbor-admin-secret` para ler a senha do admin. Se o pod `harbor-core` iniciar antes do Secret existir, ele entra em `CreateContainerConfigError`.
+
+    **Ordem correta:**
+    1. Configurar Vault com a senha em `secret/harbor/admin` (Etapa 05)
+    2. Criar `ClusterSecretStore` e `ExternalSecret` via ESO (Etapa 07)
+    3. Confirmar que o Secret `harbor-admin-secret` existe no namespace `harbor`
+    4. Somente então o `harbor-core` sobe corretamente
+
+    Neste lab, o Harbor é instalado via ArgoCD (wave 4) e o ESO (wave 2) sobe antes. Se ainda assim o Secret não existir ao iniciar, delete o pod `harbor-core` — ele vai reiniciar e pegar o Secret já criado.
+
 ## Instalação via Helm
 
 ### 1. Adicionar repositório
@@ -349,13 +360,48 @@ helm repo update
     "`$HARBOR_ROLE_ARN       = `"$HARBOR_ROLE_ARN`""       | Add-Content ~\eks-lab-vars.ps1
     ```
 
+## Troubleshooting: senha não aplicada no banco
+
+Se o Harbor subir mas o login falhar com `admin` + senha do Vault, o banco pode ter sido inicializado antes do `harbor-core` completar as migrations com o Secret correto. Isso acontece quando `harbor-core` reiniciou sem reexecutar as migrations.
+
+**Solução:** reiniciar o `harbor-core` forçando re-execução das migrations:
+
+```bash
+kubectl rollout restart deployment/harbor-core -n harbor
+kubectl rollout status deployment/harbor-core -n harbor
+```
+
+Nos logs, confirme as linhas:
+
+```
+The database has been migrated successfully
+User id: 1 updated its encrypted password successfully.
+```
+
+Se as migrations não rodarem (banco já existe e foi inicializado com senha errada), reinicialize o banco:
+
+!!! danger "Perda de dados"
+    Os comandos abaixo apagam todos os dados do Harbor (projetos, imagens, usuários). Use apenas em lab sem dados importantes.
+
+```bash
+kubectl delete pod harbor-database-0 -n harbor
+kubectl delete pvc database-data-harbor-database-0 -n harbor
+# Se o PVC travar: kubectl patch pvc database-data-harbor-database-0 -n harbor -p '{"metadata":{"finalizers":null}}'
+kubectl scale statefulset harbor-database -n harbor --replicas=0
+# Aguarde e volte para 1
+kubectl scale statefulset harbor-database -n harbor --replicas=1
+kubectl rollout restart deployment/harbor-core -n harbor
+```
+
 ## Checklist
 
 - [ ] Service Accounts `harbor-core` e `harbor-registry` pré-criados no namespace `harbor`
 - [ ] Role IAM do Harbor criada com acesso ao S3
 - [ ] Pod Identity Associations criadas para `harbor-core` e `harbor-registry`
+- [ ] `harbor-admin-secret` existindo no namespace `harbor` antes do harbor-core iniciar
 - [ ] Harbor instalado com backend S3
-- [ ] Todos os pods em estado `Running`
+- [ ] Logs do harbor-core confirmam `User id: 1 updated its encrypted password successfully`
+- [ ] Login com `admin` + senha do Vault funcionando
 - [ ] Projeto `gitops-lab` criado
 - [ ] Robot account criado e secret armazenado no Vault
 

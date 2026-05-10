@@ -396,6 +396,23 @@ kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault kv p
     "`$VAULT_ROLE_ARN = `"$VAULT_ROLE_ARN`"" | Add-Content ~\eks-lab-vars.ps1
     ```
 
+## Salvar Root Token
+
+=== "Linux / macOS"
+
+    ```bash
+    echo "export VAULT_ROOT_TOKEN=\"$VAULT_ROOT_TOKEN\"" >> ~/eks-lab-vars.env
+    ```
+
+=== "Windows (PowerShell)"
+
+    ```powershell
+    "`$VAULT_ROOT_TOKEN = `"$VAULT_ROOT_TOKEN`"" | Add-Content ~\eks-lab-vars.ps1
+    ```
+
+!!! danger "Preserve o root token"
+    O root token é necessário em etapas posteriores (configurar ESO, armazenar segredos). Salve-o no arquivo de variáveis do lab e em um gerenciador de senhas. **Nunca versione `vault-init.json`.**
+
 ## Checklist
 
 - [ ] Role IAM criada para Vault com acesso ao KMS
@@ -403,8 +420,10 @@ kubectl exec -n vault vault-0 -- sh -c "VAULT_TOKEN=$VAULT_ROOT_TOKEN vault kv p
 - [ ] Vault instalado com HA + Raft (3 réplicas)
 - [ ] Vault inicializado e sem seal (auto-unseal via KMS)
 - [ ] Raft cluster com 3 peers (1 leader, 2 followers)
+- [ ] Root token salvo em `eks-lab-vars.ps1` (ou `.env`) e em gerenciador de senhas
 - [ ] KV secrets engine habilitado em `secret/`
 - [ ] Autenticação Kubernetes habilitada
 - [ ] Política `external-secrets` e role Kubernetes criadas
+- [ ] Senha do Harbor armazenada em `secret/harbor/admin` com chave `HARBOR_ADMIN_PASSWORD`
 
 Próximo passo: [Harbor Registry](06-harbor.md).
