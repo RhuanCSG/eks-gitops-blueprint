@@ -4,13 +4,18 @@ Instalamos o ArgoCD via Helm e configuramos o padrão **App of Apps**: uma Appli
 
 ## Conceito: App of Apps
 
-```
-argocd-root-app (Application)
-├── vault-app (Application)
-├── harbor-app (Application)
-├── external-secrets-app (Application)
-├── cert-manager-app (Application)
-└── aws-lbc-app (Application)
+O `root-app` observa o diretório `apps/` do repositório de infra e gerencia o ciclo de vida de cada Application. A ordem de deploy é controlada por `sync-wave`, garantindo que dependências estejam prontas antes do próximo componente subir.
+
+```mermaid
+graph TD
+    root["root-app\nObserva apps/ no Git"]
+
+    root -->|wave 0| manifests["cluster-manifests\nNamespaces · NetworkPolicies · StorageClass gp3"]
+    root -->|wave 1| cm["cert-manager\nTLS automation · ClusterIssuer"]
+    root -->|wave 1| lbc["aws-load-balancer-controller\nALB provisioning · IngressClass alb"]
+    root -->|wave 2| eso["external-secrets\nESO controller · ClusterSecretStore"]
+    root -->|wave 3| vault["vault\nHA + Raft · KMS auto-unseal · 3 réplicas"]
+    root -->|wave 4| harbor["harbor\nRegistry privado · S3 backend"]
 ```
 
 ## Instalação

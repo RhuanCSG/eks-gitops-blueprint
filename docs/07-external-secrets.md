@@ -4,18 +4,23 @@ O External Secrets Operator (ESO) sincroniza segredos do HashiCorp Vault para Ku
 
 ## Arquitetura
 
-```
-Vault (KV v2)
-  └── secret/harbor/admin
-        └── HARBOR_ADMIN_PASSWORD
-              ↓ (ESO lê via Kubernetes auth)
-        ClusterSecretStore: vault-backend
-              ↓ (ESO sincroniza)
-        ExternalSecret: harbor-admin-secret (namespace: harbor)
-              ↓ (ESO cria)
-        Secret: harbor-admin-secret (namespace: harbor)
-              ↓ (Harbor lê)
-        Harbor UI funcionando
+```mermaid
+sequenceDiagram
+    participant CD as ArgoCD
+    participant API as Kubernetes API
+    participant ESO as External Secrets Operator
+    participant Vault
+    participant Harbor
+
+    CD->>API: apply ClusterSecretStore + ExternalSecret
+    API->>ESO: ExternalSecret criado (controller watch)
+    ESO->>Vault: autentica via Kubernetes auth role
+    Vault-->>ESO: token temporário (TTL 1h)
+    ESO->>Vault: GET secret/data/harbor/admin
+    Vault-->>ESO: HARBOR_ADMIN_PASSWORD
+    ESO->>API: cria Secret harbor-admin-secret (namespace: harbor)
+    API-->>Harbor: Secret montado como variável de ambiente
+    Note over Harbor: harbor-core inicia com<br/>senha correta do Vault
 ```
 
 ## Pré-requisitos no Vault

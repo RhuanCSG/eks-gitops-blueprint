@@ -15,21 +15,40 @@ Ao final deste guia, você terá um cluster EKS totalmente operacional com:
 
 ## Arquitetura
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        AWS us-east-1                        │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                   VPC (10.0.0.0/16)                  │   │
-│  │                                                      │   │
-│  │  Subnets Públicas (ALB)   Subnets Privadas (Nodes)   │   │
-│  │  10.0.1.0/24 (1a)         10.0.11.0/24 (1a)          │   │
-│  │  10.0.2.0/24 (1b)         10.0.12.0/24 (1b)          │   │
-│  │  10.0.3.0/24 (1c)         10.0.13.0/24 (1c)          │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                             │
-│  KMS (Vault Unseal) · S3 (Harbor) · IAM (Pod Identity)     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    Dev([Developer])
+    Internet((Internet))
+
+    subgraph AWS["AWS us-east-1"]
+        GH[(GitHub\ninfra-gitops-delivery)]
+        KMS[(KMS\nVault unseal)]
+        S3[(S3\nHarbor images)]
+
+        subgraph VPC["VPC  10.0.0.0/16"]
+            ALB["AWS ALB\ninternet-facing\n10.0.1-3.0/24"]
+
+            subgraph EKS["EKS Managed Nodes — t3.medium Spot  —  10.0.11-13.0/24"]
+                ArgoCD[ArgoCD]
+                Vault[Vault HA+Raft]
+                Harbor[Harbor]
+                ESO[External Secrets]
+                LBC[AWS LBC]
+                CM[cert-manager]
+            end
+        end
+    end
+
+    Dev -->|git push| GH
+    Internet --> ALB
+    GH -->|sync 30s| ArgoCD
+    ALB --> ArgoCD
+    ALB --> Vault
+    ALB --> Harbor
+    LBC -.->|provisiona| ALB
+    ESO --> Vault
+    Vault --> KMS
+    Harbor --> S3
 ```
 
 ## Decisões Arquiteturais
@@ -49,15 +68,41 @@ Ao final deste guia, você terá um cluster EKS totalmente operacional com:
 
 ## Fluxo GitOps
 
-```
-Developer → push → infra-gitops-delivery (privado)
-                          ↓
-                    ArgoCD detecta mudança
-                          ↓
-              Reconcilia estado no cluster EKS
-```
+Nenhum `kubectl apply` manual em produção. Todo estado é declarado em Git e sincronizado em ordem determinística pelas sync waves do ArgoCD.
 
-Nenhum `kubectl apply` manual em produção. Todo estado é declarado em Git.
+```mermaid
+sequenceDiagram
+    actor Dev as Developer
+    participant GH as GitHub
+    participant CD as ArgoCD
+    participant EKS as EKS Cluster
+
+    Dev->>GH: git push
+    GH-->>CD: webhook / poll 30s
+
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 0 — Fundação
+        CD->>EKS: Namespaces · NetworkPolicies · StorageClass gp3
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 1 — Infraestrutura de Plataforma
+        CD->>EKS: cert-manager · AWS Load Balancer Controller
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 2 — Sincronização de Segredos
+        CD->>EKS: External Secrets Operator
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 3 — Gerenciamento de Segredos
+        CD->>EKS: Vault HA + Raft + KMS auto-unseal
+    end
+    rect rgb(240, 248, 255)
+        Note over CD,EKS: Wave 4 — Aplicações
+        CD->>EKS: Harbor + S3 backend
+    end
+
+    EKS-->>Dev: cluster operacional
+```
 
 ## Repositórios
 
