@@ -123,6 +123,7 @@ sequenceDiagram
 7. [External Secrets Operator](07-external-secrets.md) — integração Vault → Kubernetes Secrets
 8. [cert-manager](08-cert-manager.md) — TLS automático com Let's Encrypt
 9. [AWS Load Balancer Controller](09-aws-load-balancer.md) — ALB nativo no EKS
+10. [Destruição dos Recursos](10-cleanup.md) — limpeza completa para evitar cobranças
 
 ## Custo Estimado
 

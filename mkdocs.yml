@@ -100,3 +100,4 @@ nav:
     - 07. External Secrets Operator: 07-external-secrets.md
     - 08. cert-manager: 08-cert-manager.md
     - 09. AWS Load Balancer Controller: 09-aws-load-balancer.md
+    - 10. Destruição dos Recursos: 10-cleanup.md
