@@ -304,3 +304,5 @@ Com esta etapa concluída, todas as ferramentas estão acessíveis via HTTP pelo
 | Harbor | `http://<HARBOR_ALB>` | admin / (do Vault em `secret/harbor/admin`) |
 | Vault  | `http://<VAULT_ALB>` | Token root (do vault-init.json) |
 | ArgoCD | `http://<ARGOCD_ALB>` | admin / (kubectl get secret argocd-initial-admin-secret) |
+
+Próximo passo: [Destruição dos Recursos](10-cleanup.md).
